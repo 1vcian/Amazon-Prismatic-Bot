@@ -442,7 +442,7 @@ bot.onText(/\/prezzi|🛒 Gotta Buy 'Em All/, async (msg) => { // Aggiunto '|�
     }
      // Messaggio finale aggiornato con timestamp
      const lastCheckTimeString = lastCheckTimestamp
-         ? lastCheckTimestamp.toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'medium' })
+         ? lastCheckTimestamp.toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'medium', timeZone: 'Europe/Rome' }) // Aggiunto timeZone
          : 'Mai';
      bot.sendMessage(chatId, `✅ Lista prodotti inviata.\n🕒 Ultimo controllo effettuato: *${lastCheckTimeString}*`, { parse_mode: 'Markdown' });
 });
@@ -489,7 +489,7 @@ bot.onText(/\/check|🔄 Gotta Check 'Em All/, async (msg) => { // Aggiunto gest
     const success = await checkAndNotify(); // Esegui il controllo
 
     if (success && lastCheckTimestamp) {
-         const lastCheckTimeString = lastCheckTimestamp.toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'medium' });
+         const lastCheckTimeString = lastCheckTimestamp.toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'medium', timeZone: 'Europe/Rome' }); // Aggiunto timeZone
          await bot.editMessageText(`✅ Controllo manuale completato.\n🕒 Ora controllo: *${lastCheckTimeString}*`, {
               chat_id: chatId,
               message_id: waitMsg.message_id,
