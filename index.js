@@ -60,7 +60,8 @@ async function fetchData() {
         const response = await axios.get(JINA_URL, {
             headers: {
                 'User-Agent': 'Mozilla/5.0',
-                'Accept-Language': 'it-IT'
+                'Accept-Language': 'it-IT',
+                'X-No-Cache': 'true' // Aggiunto header per evitare la cache di Jina
             }
         });
 
