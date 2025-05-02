@@ -12,6 +12,7 @@ const CHATS_FILE = './chats.json'; // File per memorizzare gli ID chat
 // --- Stato Globale ---
 let previousProducts = [];
 let knownChatIds = loadChatIds(); // Carica gli ID chat all'avvio
+let lastCheckTimestamp = null; // Aggiunta variabile per l'ultimo controllo
 
 // --- Inizializzazione Bot Telegram ---
 const token = process.env.TELEGRAM_TOKEN;
@@ -353,9 +354,9 @@ async function sendProductNotification(product, message, forceTextOnly = false) 
 const opts = {
     reply_markup: {
         keyboard: [ // Array di righe di bottoni
-            [{ text: '🛒 Mostra Prezzi' }, { text: '🔄 Controlla Ora' }] // Aggiunto bottone "Controlla Ora"
+            [{ text: '🛒 Gotta Buy \'Em All' }, { text: '🔄 Gotta Check \'Em All' }] // Aggiunto bottone "Controlla Ora"
         ],
-        resize_keyboard: true, // Rende la tastiera più piccola se possibile
+        resize_keyboard: false, // Rende la tastiera più piccola se possibile
         one_time_keyboard: false // Mantiene la tastiera visibile
     }
 };
@@ -384,12 +385,12 @@ bot.onText(/\/start/, (msg) => {
 
 // Comando /prezzi: Invia la lista corrente dei prodotti con immagini
 // Modificato per accettare sia il comando che il testo del bottone
-bot.onText(/\/prezzi|🛒 Mostra Prezzi/, async (msg) => { // Aggiunto '|🛒 Mostra Prezzi'
+bot.onText(/\/prezzi|🛒 Gotta Buy 'Em All/, async (msg) => { // Aggiunto '|🛒 Gotta Buy 'Em All'
     const chatId = String(msg.chat.id);
     const waitMessage = await bot.sendMessage(chatId, "Recupero la lista dei prodotti, attendi un momento..."); // Messaggio di attesa
 
     if (!previousProducts || previousProducts.length === 0) {
-        bot.editMessageText("La lista dei prodotti è ancora vuota o in fase di caricamento. Riprova tra poco.", {
+        bot.editMessageText("La lista dei prodotti è ancora vuota o non è stato ancora effettuato un controllo. Usa '🔄 Gotta Check \\'Em All' per avviare il primo controllo.", { // Messaggio aggiornato
              chat_id: chatId,
              message_id: waitMessage.message_id
         });
@@ -439,121 +440,80 @@ bot.onText(/\/prezzi|🛒 Mostra Prezzi/, async (msg) => { // Aggiunto '|🛒 Mo
              await new Promise(resolve => setTimeout(resolve, 1000));
         }
     }
-     bot.sendMessage(chatId, "✅ Lista prodotti inviata!");
+     // Messaggio finale aggiornato con timestamp
+     const lastCheckTimeString = lastCheckTimestamp
+         ? lastCheckTimestamp.toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'medium' })
+         : 'Mai';
+     bot.sendMessage(chatId, `✅ Lista prodotti inviata.\n🕒 Ultimo controllo effettuato: *${lastCheckTimeString}*`, { parse_mode: 'Markdown' });
 });
 
-// Gestore per il bottone "Controlla Ora"
-bot.onText(/🔄 Controlla Ora/, async (msg) => {
-    const chatId = String(msg.chat.id);
-    console.log(`Richiesta controllo manuale da chat ID: ${chatId}`);
-    const waitMsg = await bot.sendMessage(chatId, "⏳ Avvio controllo manuale dei prodotti...");
+// --- Funzione di Controllo e Notifica ---
+async function checkAndNotify() {
+    console.log("Avvio controllo prodotti...");
+    const currentProducts = await fetchData();
 
-    try {
-        // Esegui il controllo e ottieni il risultato
-        const changesFound = await runCheck();
-
-        // Modifica il messaggio di attesa con il risultato finale
-        if (changesFound) {
-            await bot.editMessageText("✅ Controllo manuale completato. Le notifiche per eventuali cambiamenti sono state inviate.", {
-                 chat_id: chatId,
-                 message_id: waitMsg.message_id
-            });
-        } else {
-            await bot.editMessageText("✅ Controllo manuale completato. Nessun cambiamento trovato.", {
-                 chat_id: chatId,
-                 message_id: waitMsg.message_id
-            });
-        }
-    } catch (error) {
-        console.error(`Errore durante il controllo manuale richiesto da ${chatId}:`, error);
-        await bot.editMessageText("⚠️ Si è verificato un errore durante il controllo manuale.", {
-             chat_id: chatId,
-             message_id: waitMsg.message_id
-        });
+    if (!currentProducts || currentProducts.length === 0) {
+        console.log("Fetch fallito o nessun prodotto trovato. Controllo saltato.");
+        return false; // Indica che il controllo non è andato a buon fine completamente
     }
-});
 
+    // Aggiorna il timestamp SOLO se il fetch ha avuto successo
+    lastCheckTimestamp = new Date();
+    console.log(`Controllo completato il: ${lastCheckTimestamp.toLocaleString('it-IT')}`);
 
-// --- Logica di Controllo Periodico ---
-async function runCheck() {
-    let hasChanges = false; // Variabile per tracciare se ci sono stati cambiamenti
-    try {
-        console.log("Avvio controllo prodotti...");
-        // 1. Recupera i dati più recenti
-        const current = await fetchData();
-
-        if (!Array.isArray(current)) {
-            console.error("Errore: fetchData non ha restituito un array. Ricevuto:", typeof current);
-            return false; // Indica che non ci sono stati cambiamenti (o c'è stato un errore)
-        }
-
-        if (previousProducts.length === 0 && current.length > 0) {
-            console.log(`Prima esecuzione con dati: trovati ${current.length} prodotti. Verranno usati come base per il prossimo controllo.`);
-            previousProducts = current;
-            // Non consideriamo la prima esecuzione come un "cambiamento" notificabile di per sé
-            return false;
-        } else if (previousProducts.length === 0 && current.length === 0) {
-             console.log("Prima esecuzione: nessun prodotto trovato. Riprovo al prossimo intervallo.");
-             return false;
-        }
-
-        // 2. Confronta i dati nuovi (current) con quelli vecchi (previousProducts)
-        const changes = compareProducts(previousProducts, current);
+    if (previousProducts.length > 0) {
+        const changes = compareProducts(previousProducts, currentProducts);
         const totalChanges = changes.added.length + changes.removed.length + changes.changed.length;
-        const countChanged = previousProducts.length !== current.length;
 
-        // 3. Notifica se ci sono cambiamenti
-        if (totalChanges > 0 || countChanged) {
-             hasChanges = true; // Imposta a true se ci sono cambiamenti
-             if (totalChanges > 0) {
-                 console.log(`Trovati cambiamenti: ${changes.added.length} aggiunti, ${changes.removed.length} rimossi, ${changes.changed.length} modificati.`);
-                 await notifyTelegram(changes);
-             } else if (countChanged) {
-                 console.log(`Numero prodotti cambiato da ${previousProducts.length} a ${current.length}, ma nessun dettaglio specifico rilevato.`);
-                 const countMessage = `ℹ️ Il numero totale di prodotti è cambiato da ${previousProducts.length} a ${current.length}.`;
-                 for (const chatId of knownChatIds) {
-                     try { await bot.sendMessage(chatId, countMessage); } catch (e) { console.error("Errore invio notifica cambio conteggio:", e.message); }
-                 }
-             }
+        if (totalChanges > 0) {
+            console.log(`Rilevati ${totalChanges} cambiamenti.`);
+            await notifyTelegram(changes);
         } else {
             console.log("Nessun cambiamento rilevato.");
-            // hasChanges rimane false
         }
-
-        previousProducts = current;
-        console.log("Controllo prodotti completato.");
-
-    } catch (error) {
-        console.error('Errore generale in runCheck:', error.message, error.stack);
-        // In caso di errore, consideriamo che non ci siano stati cambiamenti validi da segnalare
-        return false;
+    } else {
+        console.log("Primo controllo eseguito, memorizzo la lista iniziale.");
+        // Opzionale: invia notifica per il primo controllo
+        // await notifyTelegram({ added: currentProducts, removed: [], changed: [] });
     }
-    return hasChanges; // Restituisce true se ci sono stati cambiamenti, false altrimenti
+
+    previousProducts = currentProducts; // Aggiorna la lista precedente
+    return true; // Indica che il controllo è stato eseguito
+}
+
+// --- Gestore Comando /check e Bottone ---
+bot.onText(/\/check|🔄 Gotta Check 'Em All/, async (msg) => { // Aggiunto gestore per il testo del bottone
+    const chatId = String(msg.chat.id);
+    const waitMsg = await bot.sendMessage(chatId, "🔄 Avvio controllo manuale dei prodotti...");
+
+    const success = await checkAndNotify(); // Esegui il controllo
+
+    if (success && lastCheckTimestamp) {
+         const lastCheckTimeString = lastCheckTimestamp.toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'medium' });
+         await bot.editMessageText(`✅ Controllo manuale completato.\n🕒 Ora controllo: *${lastCheckTimeString}*`, {
+              chat_id: chatId,
+              message_id: waitMsg.message_id,
+              parse_mode: 'Markdown'
+         });
+    } else {
+         await bot.editMessageText("⚠️ Si è verificato un errore durante il controllo manuale o nessun prodotto trovato. Controlla i log.", {
+              chat_id: chatId,
+              message_id: waitMsg.message_id
+         });
+    }
+});
+
+
+// --- Loop Principale ---
+async function mainLoop() {
+    console.log("Eseguo il primo controllo all'avvio...");
+    await checkAndNotify(); // Esegui subito un controllo
+
+    setInterval(async () => {
+        console.log(`Eseguo controllo periodico (ogni ${CHECK_INTERVAL_MS / 60000} minuti)...`);
+        await checkAndNotify();
+    }, CHECK_INTERVAL_MS);
 }
 
 // --- Avvio ---
-// Esegui un primo check all'avvio dopo un breve ritardo per permettere al bot di inizializzarsi
-console.log("Esecuzione controllo iniziale tra 5 secondi...");
-setTimeout(runCheck, 5000);
-
-// Imposta il controllo periodico
-setInterval(runCheck, CHECK_INTERVAL_MS);
-
-console.log(`Controllo periodico impostato ogni ${CHECK_INTERVAL_MS / 60000} minuti.`);
-
-// Gestione uscita pulita (opzionale ma consigliato)
-process.on('SIGINT', () => {
-    console.log("Ricevuto SIGINT. Arresto del bot...");
-    bot.stopPolling();
-    saveChatIds(); // Salva gli ID prima di uscire
-    console.log("Bot arrestato.");
-    process.exit(0);
-});
-
-process.on('SIGTERM', () => {
-    console.log("Ricevuto SIGTERM. Arresto del bot...");
-    bot.stopPolling();
-    saveChatIds();
-    console.log("Bot arrestato.");
-    process.exit(0);
-});
+mainLoop(); // Avvia il loop principale
