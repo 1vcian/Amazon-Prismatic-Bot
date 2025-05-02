@@ -6,7 +6,7 @@ const TelegramBot = require('node-telegram-bot-api'); // Importa la libreria
 
 // --- Configurazione ---
 const JINA_URL = 'https://r.jina.ai/https://www.amazon.it/stores/page/BA1E70A5-3500-44A3-BC30-B0FB450B17BB';
-const CHECK_INTERVAL_MS = 5 * 60 * 1000; // Controlla ogni 15 minuti (esempio)
+const CHECK_INTERVAL_MS = 1 * 60 * 1000; // Controlla ogni 15 minuti (esempio)
 const CHATS_FILE = './chats.json'; // File per memorizzare gli ID chat
 
 // --- Stato Globale ---
