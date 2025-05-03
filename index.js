@@ -201,6 +201,11 @@ function compareProducts(oldList, newList) {
         changed: []
     };
 
+    if (newList.length === 0) {
+        console.log("Lista prodotti nuova vuota, non posso confrontare. potrebbe esserci stato un errore nella get");
+        return changes; // Ritorna un oggetto vuoto
+    }
+
     // Funzione helper per ottenere una chiave univoca (link o titolo)
     const getKey = (product) => {
         // Normalizza il link rimuovendo i parametri di query
@@ -223,7 +228,6 @@ function compareProducts(oldList, newList) {
     };
 
     const oldProductMap = new Map(oldList.map(p => [getKey(p), p]));
-    const newProductMap = new Map(newList.map(p => [getKey(p), p]));
 
     // Cerca prodotti aggiunti e modificati
     newList.forEach(newItem => {
@@ -258,6 +262,7 @@ function compareProducts(oldList, newList) {
 
     // I prodotti rimasti in oldProductMap sono quelli rimossi
     changes.removed = Array.from(oldProductMap.values());
+    if(changes.length)
 
     return changes; // Ritorna un oggetto con le tre liste
 }
