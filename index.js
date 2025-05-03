@@ -15,7 +15,8 @@ const defaultPreferences = {
     notifyRemoved: false,
     notifyPriceIncrease: false,
     notifyAllChanges: false, // Se true, ignora le altre impostazioni e notifica tutto
-    priceDecreaseThreshold: 20 // Percentuale (0 = qualsiasi diminuzione)
+    priceDecreaseThreshold: 40, // Percentuale (0 = qualsiasi diminuzione)
+    notificationsEnabled: true // Nuova opzione per abilitare/disabilitare tutte le notifiche
 };
 // --- Stato Globale ---
 let previousProducts = [];
@@ -201,7 +202,25 @@ function compareProducts(oldList, newList) {
     };
 
     // Funzione helper per ottenere una chiave univoca (link o titolo)
-    const getKey = (product) => product.link || product.title || `no-key-${Math.random()}`;
+    const getKey = (product) => {
+        // Normalizza il link rimuovendo i parametri di query
+        let normalizedLink = '';
+        if (product.link) {
+            try {
+                const url = new URL(product.link);
+                // Mantieni solo il pathname, rimuovi i parametri di query
+                normalizedLink = url.origin + url.pathname;
+            } catch (e) {
+                normalizedLink = product.link; // Fallback al link originale
+            }
+        }
+        
+        // Normalizza il titolo (rimuovi spazi extra, converti in minuscolo)
+        const normalizedTitle = (product.title || '').trim().toLowerCase();
+        
+        // Usa prima il link normalizzato, poi il titolo, poi un fallback con l'immagine
+        return normalizedLink || normalizedTitle || (product.image ? product.image.split('/').pop() : `no-key-${Date.now()}`);
+    };
 
     const oldProductMap = new Map(oldList.map(p => [getKey(p), p]));
     const newProductMap = new Map(newList.map(p => [getKey(p), p]));
@@ -263,8 +282,14 @@ async function processNotifications(changes) {
 
     for (const chatId of chatIds) {
         const prefs = getUserPreferences(chatId);
+        
+        // Controlla se le notifiche sono disabilitate per questo utente
+        if (!prefs.notificationsEnabled) {
+            console.log(`Notifiche disabilitate per l'utente ${chatId}, salto.`);
+            continue; // Salta questo utente e passa al prossimo
+        }
+        
         let messagesToSend = []; // Array di messaggi da inviare a questo utente
-
         // 1. Summary Message (always sent if there are changes)
         let summaryMessage = "ℹ️ *Product Changes Summary:*\n";
         if (added.length > 0) summaryMessage += `➕ *${added.length}* Products Added\n`;
@@ -620,6 +645,9 @@ bot.on('callback_query', async (callbackQuery) => {
         case 'toggle_all':
             prefs.notifyAllChanges = !prefs.notifyAllChanges;
             break;
+        case 'toggle_notifications':
+            prefs.notificationsEnabled = !prefs.notificationsEnabled;
+            break;
         case 'close_settings':
             // Elimina il messaggio delle impostazioni
             try {
@@ -759,6 +787,7 @@ Current status:
 📈 Price Increases: ${prefs.notifyPriceIncrease ? '✅ Active' : '❌ Inactive'}
 📉 Price Decrease Threshold: *${prefs.priceDecreaseThreshold}%* (0% = any decrease)
 🚨 Notify All Changes: ${prefs.notifyAllChanges ? '✅ Active' : '❌ Inactive'} _(ignores other settings)_
+🔕 Notifications: ${prefs.toggle_notifications ? '✅ Active' : '❌ Inactive'}
 
 Click buttons to modify:
 `;
@@ -773,7 +802,8 @@ Click buttons to modify:
                 { text: `Threshold: ${prefs.priceDecreaseThreshold}%`, callback_data: 'set_threshold' }
             ],
             [
-                { text: `Notify All: ${prefs.notifyAllChanges ? '✅' : '❌'}`, callback_data: 'toggle_all' }
+                { text: `Notify All: ${prefs.notifyAllChanges ? '✅' : '❌'}`, callback_data: 'toggle_all' },
+                { text: `Enable Notifications: ${prefs.notificationsEnabled ? '✅' : '❌'}`, callback_data: 'toggle_notifications' }
             ],
             [
                 { text: '✅ Close', callback_data: 'close_settings' }
