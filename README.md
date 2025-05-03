@@ -1,76 +1,85 @@
 # Amazon Prismatic Bot
 
-Questo è un bot Telegram Node.js progettato per monitorare una specifica pagina dello store Amazon (in questo caso, dedicata a "Evoluzioni Prismatiche" del GCC Pokémon su Amazon.it) e notificare gli utenti su Telegram riguardo a cambiamenti nei prodotti disponibili.
+This is a Node.js Telegram bot designed to monitor a specific Amazon store page (in this case, dedicated to "Prismatic Evolutions" of the Pokémon TCG on Amazon.it) and notify users on Telegram about changes in available products.
 
-## Come Funziona
+## How It Works
 
-1.  **Recupero Dati:** Lo script utilizza [Jina AI Reader](https://jina.ai/reader/) per ottenere una versione testuale semplificata della pagina dello store Amazon specificata. Questo aiuta a bypassare la complessità del rendering HTML diretto.
-2.  **Parsing:** Analizza il testo ricevuto da Jina AI per estrarre informazioni chiave sui prodotti, come:
-    *   Immagine del prodotto
-    *   Titolo
-    *   Prezzo
-    *   Link alla pagina del prodotto
-    *   Rating (se disponibile)
-3.  **Confronto:** Confronta l'elenco dei prodotti appena recuperato con l'elenco dell'ultimo controllo. Identifica:
-    *   Prodotti aggiunti
-    *   Prodotti rimossi
-    *   Prodotti modificati (cambiamenti nel prezzo, titolo, rating o immagine)
-4.  **Notifica:** Se vengono rilevati cambiamenti, invia notifiche dettagliate tramite un bot Telegram agli utenti iscritti. Le notifiche includono:
-    *   Un riepilogo dei cambiamenti (quanti aggiunti, rimossi, modificati).
-    *   Messaggi individuali per ogni prodotto aggiunto, rimosso o modificato, con dettagli specifici e un link al prodotto. Viene inclusa anche l'immagine del prodotto quando possibile.
-5.  **Persistenza:** Gli ID delle chat Telegram degli utenti iscritti vengono salvati nel file `chats.json` per garantire che le notifiche vengano inviate agli utenti corretti anche dopo il riavvio dello script.
-6.  **Esecuzione Periodica:** Lo script esegue controlli a intervalli regolari (configurabili tramite `CHECK_INTERVAL_MS` in `index.js`) per monitorare continuamente la pagina.
-7.  **Server Web:** Un semplice server Express (`server.js`) è incluso per mantenere il processo attivo, utile per piattaforme di hosting come Replit, Glitch, o simili.
+1.  **Data Retrieval:** The script uses [Jina AI Reader](https://jina.ai/reader/) to obtain a simplified text version of the specified Amazon store page. This helps bypass the complexity of direct HTML rendering.
+2.  **Parsing:** Analyzes the text received from Jina AI to extract key product information, such as:
+    *   Product image
+    *   Title
+    *   Price
+    *   Product page link
+    *   Rating (if available)
+3.  **Comparison:** Compares the newly retrieved product list with the list from the last check. Identifies:
+    *   Added products
+    *   Removed products
+    *   Modified products (changes in price, title, rating, or image)
+4.  **Notification:** If changes are detected, sends detailed notifications via Telegram bot to subscribed users. Notifications include:
+    *   A summary of changes (how many added, removed, modified).
+    *   Individual messages for each added, removed, or modified product, with specific details and a link to the product. Product image is also included when possible.
+5.  **Persistence:** Telegram chat IDs of subscribed users are saved in the `user_data.json` file to ensure notifications are sent to the correct users even after script restart.
+6.  **Periodic Execution:** The script performs checks at regular intervals (configurable via `CHECK_INTERVAL_MS` in `index.js`) to continuously monitor the page.
+7.  **Web Server:** A simple Express server (`server.js`) is included to keep the process active, useful for hosting platforms like Replit, Glitch, or similar.
 
-## Funzionalità Principali
+## Main Features
 
-*   Monitoraggio automatico di una pagina store Amazon.
-*   Estrazione di dettagli dei prodotti (titolo, prezzo, immagine, link, rating).
-*   Rilevamento di prodotti nuovi, rimossi o modificati.
-*   Notifiche dettagliate tramite Telegram.
-*   Gestione degli utenti iscritti tramite comandi del bot.
-*   Configurazione tramite variabili d'ambiente (`.env`).
+*   Automatic monitoring of an Amazon store page.
+*   Extraction of product details (title, price, image, link, rating).
+*   Detection of new, removed, or modified products.
+*   Detailed notifications via Telegram.
+*   Management of subscribed users through bot commands.
+*   Configuration through environment variables (`.env`).
+*   Customization of notification preferences for each user.
 
-## Setup e Installazione
+## Setup and Installation
 
-1.  **Clona il repository:**
+1.  **Clone the repository:**
     ```bash
-    git clone <url-del-tuo-repository>
+    git clone <your-repository-url>
     cd Amazon-Prismatic-Bot
     ```
-2.  **Installa le dipendenze:**
+2.  **Install dependencies:**
     ```bash
     npm install
     ```
-3.  **Crea un file `.env`:**
-    Nella directory principale del progetto, crea un file chiamato `.env` e aggiungi il token del tuo bot Telegram:
+3.  **Create a `.env` file:**
+    In the project's root directory, create a file called `.env` and add your Telegram bot token:
     ```dotenv
-    TELEGRAM_TOKEN=IL_TUO_TOKEN_TELEGRAM_QUI
+    TELEGRAM_TOKEN=YOUR_TELEGRAM_TOKEN_HERE
     ```
-    *Nota: Ottieni il token da BotFather su Telegram.*
-4.  **Avvia il bot:**
+    *Note: Get the token from BotFather on Telegram.*
+4.  **Start the bot:**
     ```bash
     npm start
     ```
-    Questo comando eseguirà `node server.js`, che a sua volta avvierà il monitoraggio definito in `index.js`.
+    This command will run `node server.js`, which in turn will start the monitoring defined in `index.js`.
 
-## Utilizzo (Comandi Telegram)
+## Usage (Telegram Commands)
 
-Interagisci con il bot su Telegram:
+Interact with the bot on Telegram:
 
-*   `/start`: Registra la tua chat per ricevere le notifiche.
-*   `/prezzi`: Mostra i prodotti disponibili e il loro prezzo.
-*   `/Check`: Avvia un controllo manuale per verificare i prodotti.
+*   `/start`: Register your chat to receive notifications and show the main keyboard.
+*   `/check`: Start a manual check to verify products.
+*   `/settings`: Configure your notification preferences.
+*   `/info`: Show information about the bot and available commands.
 
-## Dipendenze Principali
+## Quick Keys
 
-*   `axios`: Per effettuare richieste HTTP (a Jina AI Reader).
-*   `node-telegram-bot-api`: Per interagire con l'API di Telegram.
-*   `dotenv`: Per caricare variabili d'ambiente dal file `.env`.
-*   `express`: Per creare il server web di base.
+*   🛒 Gotta Buy 'Em All - Open Amazon page
+*   🔄 Gotta Check 'Em All - Check products now
+*   ⚙️ Gotta Set 'Em All - Configure settings
+*   ℹ️ Gotta Info 'Em All - Show information
 
-*(Vedi `package.json` per l'elenco completo)*
+## Main Dependencies
 
-## Nota Importante
+*   `axios`: For making HTTP requests (to Jina AI Reader).
+*   `node-telegram-bot-api`: For interacting with Telegram API.
+*   `dotenv`: For loading environment variables from `.env` file.
+*   `express`: For creating the basic web server.
 
-Questo script dipende dal servizio esterno Jina AI Reader per interpretare la pagina Amazon. Cambiamenti nel layout della pagina Amazon o nel funzionamento di Jina AI Reader potrebbero richiedere aggiornamenti allo script per continuare a funzionare correttamente.
+*(See `package.json` for complete list)*
+
+## Important Note
+
+This script depends on the external Jina AI Reader service to interpret the Amazon page. Changes in Amazon's page layout or in Jina AI Reader's functionality might require updates to the script to continue working correctly.

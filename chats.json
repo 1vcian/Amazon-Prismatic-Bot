@@ -1,3 +1,9 @@
-[
-  "144175918"
-]
+{
+  "144175918": {
+    "notifyAllChanges": false,
+    "notifyRemoved": true,
+    "notifyAdded": true,
+    "notifyIncrease": false,
+    "decreasePercent": 20
+  }
+}

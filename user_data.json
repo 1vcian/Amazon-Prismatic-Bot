@@ -1,0 +1,14 @@
+{
+  "144175918": {
+    "preferences": {
+      "notifyNew": true,
+      "notifyRemoved": false,
+      "notifyPriceIncrease": true,
+      "notifyAllChanges": false,
+      "priceDecreaseThreshold": 40
+    },
+    "registered": true,
+    "firstName": "Lucian",
+    "awaitingThreshold": false
+  }
+}
