@@ -2,9 +2,9 @@
   "144175918": {
     "preferences": {
       "notifyNew": true,
-      "notifyRemoved": true,
-      "notifyPriceIncrease": true,
-      "notifyAllChanges": true,
+      "notifyRemoved": false,
+      "notifyPriceIncrease": false,
+      "notifyAllChanges": false,
       "priceDecreaseThreshold": 50,
       "notificationsEnabled": true
     },
