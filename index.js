@@ -262,7 +262,7 @@ function compareProducts(oldList, newList) {
 
     // I prodotti rimasti in oldProductMap sono quelli rimossi
     changes.removed = Array.from(oldProductMap.values());
-    if(changes.length)
+
 
     return changes; // Ritorna un oggetto con le tre liste
 }
