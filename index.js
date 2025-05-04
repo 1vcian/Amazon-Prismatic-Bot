@@ -80,15 +80,13 @@ async function fetchData() {
             headers: {
                 'User-Agent': 'Mozilla/5.0',
                 'Accept-Language': 'it-IT',
-                'Accept': 'text/event-stream',
                 'DNT': '1',
-                'X-Engine': 'browser',
                 'X-No-Cache': 'true'
             }
         });
 
         const rawData = response.data;
-        //console.log(rawData)
+        console.log(rawData)
         const products = [];
         // Dividiamo il testo grezzo in linee per facilitare l'analisi contestuale
         const allLines = rawData.split('\n');
