@@ -339,6 +339,7 @@ async function processNotifications(changes) {
     for (const chatId of chatIds) {
         const prefs = getUserPreferences(chatId);
         let counterModificheBuone=0
+        let messagesToSend = []; 
 
         
         // Controlla se le notifiche sono disabilitate per questo utente
@@ -352,7 +353,7 @@ async function processNotifications(changes) {
             let priceDecreasedSignificantly = false;
             let priceIncreased = false;
             let otherChange = false;
-            let messagesToSend = []; 
+           
 
             productChange.details.forEach(detail => {
                 const oldValue = String(detail.old).length > 50 ? String(detail.old).substring(0, 47) + '...' : detail.old;
