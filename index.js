@@ -352,6 +352,7 @@ async function processNotifications(changes) {
             let priceDecreasedSignificantly = false;
             let priceIncreased = false;
             let otherChange = false;
+            let messagesToSend = []; 
 
             productChange.details.forEach(detail => {
                 const oldValue = String(detail.old).length > 50 ? String(detail.old).substring(0, 47) + '...' : detail.old;
@@ -419,7 +420,7 @@ ${changeDetailsText}🔗 [Product Link](${productChange.link || '#'})`;
 
 
 
-        let messagesToSend = []; // Array di messaggi da inviare a questo utente
+      // Array di messaggi da inviare a questo utente
         // 1. Summary Message (always sent if there are changes)
         let summaryMessage = "ℹ️ *Product Changes Summary:*\n";
         if (added.length > 0) summaryMessage += `➕ *${added.length}* Products Added\n`;
