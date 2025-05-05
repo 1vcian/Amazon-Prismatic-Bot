@@ -11,11 +11,17 @@ This is a Node.js Telegram bot designed to monitor a specific Amazon store page 
     *   Price
     *   Product page link
     *   Rating (if available)
+      <p align="center">
+         <img width="323" alt="image" src="https://github.com/user-attachments/assets/03548efa-94f4-4e0e-9c5f-3ae692fc2826" />
+      </p>
 3.  **Comparison:** Compares the newly retrieved product list with the list from the last check. Identifies:
     *   Added products (truly new products never seen before)
     *   Removed products
     *   Modified products (changes in price, title, rating, or image)
     *   Reappeared products (previously removed products that are available again)
+      <p align="center">
+      <img width="411" alt="image" src="https://github.com/user-attachments/assets/b3630a56-6590-47f6-818a-056cebfe2b05" />
+      </p>
 4.  **Notification:** If changes are detected, sends detailed notifications via Telegram bot to subscribed users. Notifications include:
     *   A summary of changes (how many added, removed, modified, reappeared).
     *   Individual messages for each added, removed, modified, or reappeared product, with specific details and a link to the product. Product image is also included when possible.
@@ -72,6 +78,9 @@ Interact with the bot on Telegram:
 *   🔄 Gotta Check 'Em All - Check products now
 *   ⚙️ Gotta Set 'Em All - Configure settings
 *   ℹ️ Gotta Info 'Em All - Show information
+  <p align="center">
+     <img width="426" alt="image" src="https://github.com/user-attachments/assets/f7987ccb-b456-4cf0-be9a-e8349764f1a9" />
+  </p>
 
 ## Main Dependencies
 
@@ -85,3 +94,6 @@ Interact with the bot on Telegram:
 ## Important Note
 
 This script depends on the external Jina AI Reader service to interpret the Amazon page. Changes in Amazon's page layout or in Jina AI Reader's functionality might require updates to the script to continue working correctly.
+<p align="center">
+<img width="469" alt="image" src="https://github.com/user-attachments/assets/517ac7e4-affc-48ba-a81c-067e9ddea96b" />
+</p>
