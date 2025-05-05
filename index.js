@@ -13,16 +13,47 @@ const USER_DATA_FILE = './user_data.json'; // Nuovo file per dati utente e prefe
 const defaultPreferences = {
     notifyNew: true,
     notifyRemoved: false,
+    notifyReadded:false,
     notifyPriceIncrease: false,
     notifyAllChanges: false, // Se true, ignora le altre impostazioni e notifica tutto
     priceDecreaseThreshold: 40, // Percentuale (0 = qualsiasi diminuzione)
     notificationsEnabled: true // Nuova opzione per abilitare/disabilitare tutte le notifiche
 };
+const ALL_PRODUCTS_FILE = './all_products_ever_seen.json';
 // --- Stato Globale ---
 let previousProducts = [];
-// let knownChatIds = loadChatIds(); // Non più usato direttamente
 let userData = loadUserData(); // Carica dati utente e preferenze all'avvio
-let lastCheckTimestamp = null; // Aggiunta 
+let lastCheckTimestamp = null;
+let allProductsEverSeen = loadAllProductsEverSeen(); // Nuovo archivio di tutti i prodotti mai visti
+
+
+
+
+function loadAllProductsEverSeen() {
+    try {
+        if (fs.existsSync(ALL_PRODUCTS_FILE)) {
+            const data = fs.readFileSync(ALL_PRODUCTS_FILE);
+            const parsedData = JSON.parse(data);
+            if (Array.isArray(parsedData)) {
+                console.log(`Caricati ${parsedData.length} prodotti dall'archivio storico.`);
+                return parsedData;
+            }
+        }
+    } catch (error) {
+        console.error(`Errore nel caricamento di ${ALL_PRODUCTS_FILE}:`, error.message);
+    }
+    console.log(`${ALL_PRODUCTS_FILE} non trovato o non valido, inizio con un array vuoto.`);
+    return []; // Inizia con un array vuoto
+}
+
+function saveAllProductsEverSeen() {
+    try {
+        fs.writeFileSync(ALL_PRODUCTS_FILE, JSON.stringify(allProductsEverSeen, null, 2));
+        console.log(`Salvati ${allProductsEverSeen.length} prodotti nell'archivio storico.`);
+    } catch (error) {
+        console.error(`Errore nel salvataggio di ${ALL_PRODUCTS_FILE}:`, error.message);
+    }
+}
 
 // --- Inizializzazione Bot Telegram ---
 const token = process.env.TELEGRAM_TOKEN;
@@ -86,7 +117,7 @@ async function fetchData() {
         });
 
         const rawData = response.data;
-        console.log(rawData)
+        //console.log(rawData)
         const products = [];
         // Dividiamo il testo grezzo in linee per facilitare l'analisi contestuale
         const allLines = rawData.split('\n');
@@ -200,7 +231,8 @@ function compareProducts(oldList, newList) {
     const changes = {
         added: [],
         removed: [],
-        changed: []
+        changed: [],
+        reappeared: [] 
     };
 
     if (newList.length === 0) {
@@ -230,7 +262,8 @@ function compareProducts(oldList, newList) {
     };
 
     const oldProductMap = new Map(oldList.map(p => [getKey(p), p]));
-
+    const allProductKeysSet = new Set(allProductsEverSeen.map(p => getKey(p)));
+    let saveFileAllProducts=false
     // Cerca prodotti aggiunti e modificati
     newList.forEach(newItem => {
         const key = getKey(newItem);
@@ -257,22 +290,38 @@ function compareProducts(oldList, newList) {
             // Rimuovi dal map vecchio per trovare facilmente i rimossi dopo
             oldProductMap.delete(key);
         } else {
-            // Prodotto non trovato nel vecchio map -> Aggiunto
-            changes.added.push(newItem);
+              // Prodotto non trovato nel vecchio map -> Aggiunto o Riapparso
+            
+            // Controlla se il prodotto è mai stato visto prima
+            if (allProductKeysSet.has(key)) {
+                // Prodotto già visto in passato -> Riapparso
+                changes.reappeared.push(newItem);
+            } else {
+                // Prodotto mai visto prima -> Veramente nuovo
+                changes.added.push(newItem);
+                
+                // Aggiungi il prodotto all'archivio storico
+                allProductsEverSeen.push(newItem);
+                saveFileAllProducts=true; // Imposta il flag per salvare l'archivio
+            }
         }
     });
 
     // I prodotti rimasti in oldProductMap sono quelli rimossi
     changes.removed = Array.from(oldProductMap.values());
+   // Salva l'archivio aggiornato
+   if (saveFileAllProducts) saveAllProductsEverSeen();
+    console.log("Archivio storico aggiornato.");
 
 
-    return changes; // Ritorna un oggetto con le tre liste
+    return changes; 
+
 }
 
 // --- Funzione Notifica Telegram (Modificata per gestire added, removed, changed) ---
 async function processNotifications(changes) {
-    const { added, removed, changed } = changes;
-    const totalChanges = added.length + removed.length + changed.length;
+    const { added, removed, changed, reappeared } = changes;
+    const totalChanges = added.length + removed.length + changed.length + reappeared.length;
 
     if (totalChanges === 0) {
         console.log("Nessun cambiamento rilevato.");
@@ -289,50 +338,14 @@ async function processNotifications(changes) {
 
     for (const chatId of chatIds) {
         const prefs = getUserPreferences(chatId);
+        let counterModificheBuone=0
+
         
         // Controlla se le notifiche sono disabilitate per questo utente
         if (!prefs.notificationsEnabled) {
             console.log(`Notifiche disabilitate per l'utente ${chatId}, salto.`);
             continue; // Salta questo utente e passa al prossimo
         }
-        
-        let messagesToSend = []; // Array di messaggi da inviare a questo utente
-        // 1. Summary Message (always sent if there are changes)
-        let summaryMessage = "ℹ️ *Product Changes Summary:*\n";
-        if (added.length > 0) summaryMessage += `➕ *${added.length}* Products Added\n`;
-        if (removed.length > 0) summaryMessage += `➖ *${removed.length}* Products Removed\n`;
-        if (changed.length > 0) summaryMessage += `✏️ *${changed.length}* Products Modified\n`;
-        messagesToSend.push({ type: 'summary', text: summaryMessage });
-
-        // 2. Added Products Notification
-        if (prefs.notifyNew) {
-            for (const product of added) {
-                const message = `
-➕ *New Product Added*
-📦 *${product.title}*
-💰 Price: *${product.price || 'N/A'}*
-⭐ Rating: ${product.rating || 'N/A'}
-🔗 [Product Link](${product.link || '#'})
-`;
-                messagesToSend.push({ type: 'product', product: product, text: message, forceTextOnly: false });
-            }
-        }
-
-        // 3. Removed Products Notification
-        if (prefs.notifyRemoved || prefs.notifyAllChanges) {
-            for (const product of removed) {
-                const message = `
-➖ *Product Removed*
-📦 *${product.title}*
-_(Previous price: ${product.price || 'N/A'})_
-_(Previous rating: ${product.rating || 'N/A'})_
-${product.link ? `🔗 [Link (may not work)](${product.link})` : ''}
-`;
-                messagesToSend.push({ type: 'product', product: product, text: message, forceTextOnly: true });
-            }
-        }
-
-        // 4. Notifica Prodotti Modificati
         for (const productChange of changed) {
             let changeDetailsText = '';
             let shouldNotifyThisChange = false;
@@ -368,12 +381,15 @@ ${product.link ? `🔗 [Link (may not work)](${product.link})` : ''}
             // Decidi se notificare basandoti sulle preferenze
             if (prefs.notifyAllChanges) {
                 shouldNotifyThisChange = true;
+                counterModificheBuone+=1
             } else {
                 if (priceDecreasedSignificantly) {
                     shouldNotifyThisChange = true;
+                    counterModificheBuone+=1
                 }
                 if (priceIncreased && prefs.notifyPriceIncrease) {
                     shouldNotifyThisChange = true;
+                    counterModificheBuone+=1
                 }
                 // Nota: Altri cambiamenti (otherChange) vengono notificati solo se notifyAllChanges è true
             }
@@ -387,6 +403,70 @@ ${changeDetailsText}🔗 [Product Link](${productChange.link || '#'})`;
                 // Find complete product object for image
                 const fullProduct = changed.find(p => p.key === productChange.key); // Should be productChange itself
                 messagesToSend.push({ type: 'product', product: fullProduct || productChange, text: message, forceTextOnly: false });
+            }
+        }
+
+        const userTotalChanges = (prefs.notifyNew?added.length:0) + 
+        (prefs.notifyRemoved ? removed.length:0) + 
+        (prefs.notifyReadded ? reappeared.length:0) + counterModificheBuone;
+
+        if(userTotalChanges===0) {
+            console.log(`Nessun cambiamento rilevato per l'utente ${chatId}, salto.`);
+            continue; // Salta questo utente e passa al prossimo
+        }
+
+
+
+
+
+        let messagesToSend = []; // Array di messaggi da inviare a questo utente
+        // 1. Summary Message (always sent if there are changes)
+        let summaryMessage = "ℹ️ *Product Changes Summary:*\n";
+        if (added.length > 0) summaryMessage += `➕ *${added.length}* Products Added\n`;
+        if (reappeared.length > 0) summaryMessage += `🔄 *${reappeared.length}* Products Reappeared\n`;
+        if (removed.length > 0) summaryMessage += `➖ *${removed.length}* Products Removed\n`;
+        if (changed.length > 0) summaryMessage += `✏️ *${changed.length}* Products Modified\n`;
+        messagesToSend.push({ type: 'summary', text: summaryMessage });
+
+        // 2. Added Products Notification
+        if (prefs.notifyNew) {
+            for (const product of added) {
+                const message = `
+➕ *New Product Added*
+📦 *${product.title}*
+💰 Price: *${product.price || 'N/A'}*
+⭐ Rating: ${product.rating || 'N/A'}
+🔗 [Product Link](${product.link || '#'})
+`;
+                messagesToSend.push({ type: 'product', product: product, text: message, forceTextOnly: false });
+            }
+        }
+        
+        if (prefs.notifyReadded) {
+            for (const product of reappeared) {
+                const message = `
+➕ *Reappeared Product*
+📦 *${product.title}*
+💰 Price: *${product.price || 'N/A'}*
+⭐ Rating: ${product.rating || 'N/A'}
+🔗 [Product Link](${product.link || '#'})
+`;
+                messagesToSend.push({ type: 'product', product: product, text: message, forceTextOnly: false });
+            }
+        }
+
+
+        // 3. Removed Products Notification
+        if (prefs.notifyRemoved || prefs.notifyAllChanges) {
+            for (const product of removed) {
+                const message = `
+➖ *Product Removed*
+📦 *${product.title}*
+_(Previous price: ${product.price || 'N/A'})_
+_(Previous rating: ${product.rating || 'N/A'})_
+${product.link ? `🔗 [Link (may not work)](${product.link})` : ''}
+`;
+                messagesToSend.push({ type: 'product', product: product, text: message, forceTextOnly: true });
             }
         }
 
@@ -646,6 +726,9 @@ bot.on('callback_query', async (callbackQuery) => {
         case 'toggle_removed':
             prefs.notifyRemoved = !prefs.notifyRemoved;
             break;
+        case 'toggle_readded':
+            prefs.notifyReadded =!prefs.notifyReadded;
+            break;
         case 'toggle_increase':
             prefs.notifyPriceIncrease = !prefs.notifyPriceIncrease;
             break;
@@ -790,20 +873,26 @@ async function showSettings(chatId, messageIdToEdit = null) {
 
 Current status:
 🔔 New Products: ${prefs.notifyNew ? '✅ Active' : '❌ Inactive'}
+🔄 Reappeared Products: ${prefs.notifyReadded ? '✅ Active' : '❌ Inactive'} 
 🗑️ Removed Products: ${prefs.notifyRemoved ? '✅ Active' : '❌ Inactive'} 
 📈 Price Increases: ${prefs.notifyPriceIncrease ? '✅ Active' : '❌ Inactive'}
 📉 Price Decrease Threshold: *${prefs.priceDecreaseThreshold}%* (0% = any decrease)
 🚨 Notify All Changes: ${prefs.notifyAllChanges ? '✅ Active' : '❌ Inactive'} _(ignores other settings)_
 🔕 Notifications: ${prefs.toggle_notifications ? '✅ Active' : '❌ Inactive'}
 
-Click buttons to modify:
+Click buttons to modify: 
 `;
     const keyboard = {
         inline_keyboard: [
             [
                 { text: `New: ${prefs.notifyNew ? '✅' : '❌'}`, callback_data: 'toggle_new' },
+               
+            ],
+            [
+                { text: `Reappeared: ${prefs.notifyReadded ? '✅' : '❌'}`, callback_data: 'toggle_readded' },
                 { text: `Removed: ${prefs.notifyRemoved ? '✅' : '❌'}`, callback_data: 'toggle_removed' }
             ],
+
             [
                 { text: `Increases: ${prefs.notifyPriceIncrease ? '✅' : '❌'}`, callback_data: 'toggle_increase' },
                 { text: `Threshold: ${prefs.priceDecreaseThreshold}%`, callback_data: 'set_threshold' }

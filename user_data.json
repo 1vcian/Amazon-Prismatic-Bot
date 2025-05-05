@@ -3,9 +3,10 @@
     "preferences": {
       "notifyNew": true,
       "notifyRemoved": false,
+      "notifyReadded": true,
       "notifyPriceIncrease": false,
       "notifyAllChanges": false,
-      "priceDecreaseThreshold": 50,
+      "priceDecreaseThreshold": 20,
       "notificationsEnabled": true
     },
     "registered": true,
