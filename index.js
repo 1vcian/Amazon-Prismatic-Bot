@@ -959,7 +959,7 @@ This bot automatically monitors Amazon's Prismatic collection products and sends
 • ⚙️ Gotta Set 'Em All - Configure settings
 • ℹ️ Gotta Info 'Em All - Show this message
 
-Developed by @1vcian
+Developed by [1vcian](https://1vcian.github.io/Portfolio/)
 GitHub: [1vcian/Amazon-Prismatic-Bot](https://github.com/1vcian/Amazon-Prismatic-Bot)
 `;
     bot.sendMessage(chatId, infoMessage, { parse_mode: 'Markdown', disable_web_page_preview: true });
