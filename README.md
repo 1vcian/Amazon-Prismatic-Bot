@@ -12,12 +12,14 @@ This is a Node.js Telegram bot designed to monitor a specific Amazon store page 
     *   Product page link
     *   Rating (if available)
 3.  **Comparison:** Compares the newly retrieved product list with the list from the last check. Identifies:
-    *   Added products
+    *   Added products (truly new products never seen before)
     *   Removed products
     *   Modified products (changes in price, title, rating, or image)
+    *   Reappeared products (previously removed products that are available again)
 4.  **Notification:** If changes are detected, sends detailed notifications via Telegram bot to subscribed users. Notifications include:
-    *   A summary of changes (how many added, removed, modified).
-    *   Individual messages for each added, removed, or modified product, with specific details and a link to the product. Product image is also included when possible.
+    *   A summary of changes (how many added, removed, modified, reappeared).
+    *   Individual messages for each added, removed, modified, or reappeared product, with specific details and a link to the product. Product image is also included when possible.
+    *   Option to disable reappeared product notifications when sellers frequently add/remove the same products
 5.  **Persistence:** Telegram chat IDs of subscribed users are saved in the `user_data.json` file to ensure notifications are sent to the correct users even after script restart.
 6.  **Periodic Execution:** The script performs checks at regular intervals (configurable via `CHECK_INTERVAL_MS` in `index.js`) to continuously monitor the page.
 7.  **Web Server:** A simple Express server (`server.js`) is included to keep the process active, useful for hosting platforms like Replit, Glitch, or similar.
