@@ -5,7 +5,8 @@ require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api'); // Importa la libreria
 
 // --- Configurazione ---
-const JINA_URL = 'https://r.jina.ai/https://www.amazon.it/stores/page/BA1E70A5-3500-44A3-BC30-B0FB450B17BB';
+const STORE="https://www.amazon.it/stores/page/BA1E70A5-3500-44A3-BC30-B0FB450B17BB"
+const JINA_URL = `https://r.jina.ai/${STORE}`;
 const CHECK_INTERVAL_MS = 1 * 60 * 1000; // Controlla ogni 15 minuti (esempio)
 const USER_DATA_FILE = './user_data.json'; // Nuovo file per dati utente e preferenze
 
@@ -16,7 +17,7 @@ const defaultPreferences = {
     notifyReadded:false,
     notifyPriceIncrease: false,
     notifyAllChanges: false, // Se true, ignora le altre impostazioni e notifica tutto
-    priceDecreaseThreshold: 40, // Percentuale (0 = qualsiasi diminuzione)
+    priceDecreaseThreshold: 45, // Percentuale (0 = qualsiasi diminuzione)
     notificationsEnabled: true // Nuova opzione per abilitare/disabilitare tutte le notifiche
 };
 const ALL_PRODUCTS_FILE = './all_products_ever_seen.json';
@@ -533,7 +534,8 @@ const opts = {
     reply_markup: {
         keyboard: [ // Array di righe di bottoni
             [{ text: '🛒 Gotta Buy \'Em All' }, { text: '🔄 Gotta Check \'Em All' }],
-            [{text:'⚙️ Gotta Set \'Em All'}, {text:'ℹ️ Gotta Info \' Em All'}]
+            [{text:'⚙️ Gotta Set \'Em All'}, {text:'🛍️ Gotta Go to Store'}]
+                [{text:'ℹ️ Gotta Info \' Em All'}]
         ],
         resize_keyboard: true, // Rende la tastiera più piccola se possibile
         one_time_keyboard: false // Mantiene la tastiera visibile
@@ -562,6 +564,18 @@ bot.onText(/\/start/, (msg) => {
          saveUserData();
          console.log(`Updated preferences for existing user: ${chatId}`);
     }
+});
+
+bot.onText(/\/store|🛍️ Gotta Go to Store/, (msg) => {
+    const chatId = String(msg.chat.id);
+
+
+    // Send welcome message WITH keyboard
+    bot.sendMessage(chatId, `🛍️ [Store Link](${STORE})`, {
+        parse_mode: 'Markdown',
+        disable_web_page_preview: true
+    });
+
 });
 
 
@@ -761,7 +775,7 @@ bot.on('callback_query', async (callbackQuery) => {
             return; // Esce dallo switch
         case 'set_threshold':
             // Invia un messaggio per richiedere la percentuale
-            bot.sendMessage(chatId, "Inserisci la percentuale di diminuzione prezzo (0-100):").then(sentMsg => {
+            bot.sendMessage(chatId, "Enter price decrease percentage (0-100):").then(sentMsg => {
                 console.log(`[${chatId}] Inviato messaggio ${sentMsg.message_id} per impostare soglia, attendo prossimo messaggio...`);
                 
                 // Variabile per tenere traccia se stiamo aspettando una risposta da questo utente
@@ -779,7 +793,7 @@ bot.on('callback_query', async (callbackQuery) => {
                 }, 5 * 60 * 1000); // 5 minuti
             }).catch(error => {
                 console.error(`[${chatId}] Errore invio messaggio richiesta soglia:`, error);
-                bot.sendMessage(chatId, "⚠️ Si è verificato un errore nell'invio della richiesta. Riprova.");
+                bot.sendMessage(chatId, "⚠️ An error occurred while sending the request. Please try again.");
             });
             return; // Esce dallo switch
         default:
@@ -951,12 +965,15 @@ This bot automatically monitors Amazon's Prismatic collection products and sends
 • /start - Start the bot and show keyboard
 • /check - Check products now
 • /settings - Configure your notification preferences
-• /info - Show this message
+• /info - Amazon Store Link
+• /store - Open Amazon page
+
 
 *Quick Keys:*
 • 🛒 Gotta Buy 'Em All - Open Amazon page
 • 🔄 Gotta Check 'Em All - Check products now
 • ⚙️ Gotta Set 'Em All - Configure settings
+• 🛍️ Gotta Go to Store - Amazon Store Link
 • ℹ️ Gotta Info 'Em All - Show this message
 
 Developed by [1vcian](https://1vcian.github.io/Portfolio/)
