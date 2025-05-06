@@ -534,7 +534,7 @@ const opts = {
     reply_markup: {
         keyboard: [ // Array di righe di bottoni
             [{ text: '🛒 Gotta Buy \'Em All' }, { text: '🔄 Gotta Check \'Em All' }],
-            [{text:'⚙️ Gotta Set \'Em All'}, {text:'🛍️ Gotta Go to Store'}]
+            [{text:'⚙️ Gotta Set \'Em All'}, {text:'🛍️ Gotta Go to Store'}],
                 [{text:'ℹ️ Gotta Info \' Em All'}]
         ],
         resize_keyboard: true, // Rende la tastiera più piccola se possibile
