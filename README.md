@@ -12,7 +12,8 @@ This is a Node.js Telegram bot designed to monitor a specific Amazon store page 
     *   Product page link
     *   Rating (if available)
       <p align="center">
-         <img width="323" alt="image" src="https://github.com/user-attachments/assets/03548efa-94f4-4e0e-9c5f-3ae692fc2826" />
+        <img width="323" alt="image" src="https://github.com/user-attachments/assets/be103a78-78d9-41e5-b79e-c893aa995c12" />
+
       </p>
 3.  **Comparison:** Compares the newly retrieved product list with the list from the last check. Identifies:
     *   Added products (truly new products never seen before)
