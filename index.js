@@ -7,7 +7,7 @@ const TelegramBot = require('node-telegram-bot-api'); // Importa la libreria
 // --- Configurazione ---
 const STORE="https://www.amazon.it/stores/page/BA1E70A5-3500-44A3-BC30-B0FB450B17BB"
 const JINA_URL = `https://r.jina.ai/${STORE}`;
-const CHECK_INTERVAL_MS = 1 * 60 * 1000; // Controlla ogni 15 minuti (esempio)
+const CHECK_INTERVAL_MS = 0.5 * 60 * 1000; // Controlla ogni 15 minuti (esempio)
 const USER_DATA_FILE = './user_data.json'; // Nuovo file per dati utente e preferenze
 
 // --- Preferenze Default ---
