@@ -78,9 +78,11 @@ Interact with the bot on Telegram:
 *   🛒 Gotta Buy 'Em All - Open Amazon page
 *   🔄 Gotta Check 'Em All - Check products now
 *   ⚙️ Gotta Set 'Em All - Configure settings
+*   🛍️ Gotta Go to Store - Amazon Store Link
 *   ℹ️ Gotta Info 'Em All - Show information
   <p align="center">
-     <img width="426" alt="image" src="https://github.com/user-attachments/assets/f7987ccb-b456-4cf0-be9a-e8349764f1a9" />
+     <img width="426" alt="image" src="https://github.com/user-attachments/assets/e15ff31e-e0f8-4333-9985-11f2254d9ee3" />
+
   </p>
 
 ## Main Dependencies
@@ -96,5 +98,6 @@ Interact with the bot on Telegram:
 
 This script depends on the external Jina AI Reader service to interpret the Amazon page. Changes in Amazon's page layout or in Jina AI Reader's functionality might require updates to the script to continue working correctly.
 <p align="center">
-<img width="469" alt="image" src="https://github.com/user-attachments/assets/517ac7e4-affc-48ba-a81c-067e9ddea96b" />
+<img width="454" alt="image" src="https://github.com/user-attachments/assets/641f5b85-5178-4d5a-8788-dae0ec6ea47a" />
+
 </p>
